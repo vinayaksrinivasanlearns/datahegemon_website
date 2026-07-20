@@ -1,0 +1,13 @@
+# This repo intentionally tracks ONLY the deploy folder (the public site),
+# plus this file and the README. Everything else in the working directory
+# (private project notes, logo source, screenshots, etc.) is ignored.
+
+/*
+!/.gitignore
+!/README.md
+!/deploy/
+
+# OS / editor noise (also inside deploy/)
+.DS_Store
+Thumbs.db
+*.swp
