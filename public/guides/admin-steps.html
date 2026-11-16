@@ -1,0 +1,479 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Admin Steps</title>
+<style>
+  :root {
+    --page: #f0f2f5; --ink: #111b21; --muted: #667781; --accent: #008069;
+    --wa-head: #008069; --wa-bg: #efeae2; --wa-in: #ffffff; --wa-out: #d9fdd3;
+    --wa-btn: #027eb5; --wa-tick: #53bdeb; --wa-chip: #ffffff; --card: #ffffff;
+    --doc: #f5f6f6;
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; height: 100%; background: var(--page); color: var(--ink);
+    font-family: "Segoe UI", Roboto, "Helvetica Neue", Helvetica, Arial, sans-serif; }
+
+  /* ---- slides ---- */
+  .deck { height: 100%; }
+  .slide { display: none; height: 100vh; padding: 3vh 5vw; align-items: center;
+    justify-content: center; gap: 5vw; }
+  .slide.on { display: flex; }
+  .copy { max-width: 520px; }
+  .copy .step { color: var(--accent); font-weight: 700; letter-spacing: .04em;
+    text-transform: uppercase; font-size: 15px; }
+  .copy h1 { font-size: clamp(26px, 3.4vw, 44px); line-height: 1.15; margin: 8px 0 16px; }
+  .copy ul { padding-left: 20px; margin: 0; font-size: clamp(15px, 1.35vw, 19px); line-height: 1.55; }
+  .copy li { margin: 6px 0; }
+  .copy .tag { display: inline-block; background: #e7f6f2; color: var(--accent); border-radius: 999px;
+    padding: 4px 12px; font-size: 13px; font-weight: 600; margin-bottom: 4px; }
+  .title-slide { flex-direction: column; text-align: center; }
+  .title-slide h1 { font-size: clamp(32px, 5vw, 64px); margin: 12px 0; }
+  .title-slide p { font-size: clamp(16px, 1.8vw, 24px); color: var(--muted); margin: 6px 0; }
+  .logo { width: 96px; height: 96px; border-radius: 50%; background: var(--wa-head); color: #fff;
+    display: grid; place-items: center; font-size: 48px; margin: 0 auto; }
+
+  .nav { position: fixed; bottom: 14px; right: 18px; display: flex; gap: 8px; align-items: center;
+    font-size: 14px; color: var(--muted); }
+  .nav button { border: 0; background: var(--card); color: var(--ink); width: 38px; height: 38px;
+    border-radius: 50%; font-size: 18px; cursor: pointer; box-shadow: 0 1px 3px rgba(0,0,0,.15); }
+
+  /* ---- phone ---- */
+  .phone { height: min(90vh, 780px); aspect-ratio: 9 / 19; background: #1f2c33; border-radius: 38px;
+    padding: 10px; box-shadow: 0 18px 50px rgba(0,0,0,.25); flex: none; }
+  .screen { height: 100%; border-radius: 30px; overflow: hidden; display: flex;
+    flex-direction: column; background: var(--wa-bg); position: relative; }
+  .status { background: var(--wa-head); color: #fff; font-size: 12px; padding: 6px 18px 2px;
+    display: flex; justify-content: space-between; }
+  .head { background: var(--wa-head); color: #fff; display: flex; align-items: center; gap: 10px;
+    padding: 6px 10px 10px; }
+  .head .back { font-size: 20px; opacity: .9; }
+  .avatar { width: 38px; height: 38px; border-radius: 50%; background: #d9fdd3; color: var(--wa-head);
+    display: grid; place-items: center; font-size: 19px; flex: none; }
+  .who { flex: 1; min-width: 0; }
+  .who b { display: block; font-size: 16px; font-weight: 600; white-space: nowrap; overflow: hidden;
+    text-overflow: ellipsis; }
+  .who span { font-size: 12px; opacity: .85; }
+  .icons { display: flex; gap: 16px; opacity: .95; }
+  .icons svg { width: 20px; height: 20px; fill: #fff; }
+
+  .chat { flex: 1; overflow: hidden; padding: 8px 10px 6px; display: flex; flex-direction: column;
+    justify-content: flex-end; gap: 4px;
+    background-color: var(--wa-bg);
+    background-image: radial-gradient(rgba(0,0,0,.035) 1px, transparent 1.4px);
+    background-size: 18px 18px; }
+  .chip { align-self: center; background: var(--wa-chip); color: var(--muted); font-size: 12px;
+    padding: 4px 10px; border-radius: 7px; margin: 6px 0; box-shadow: 0 1px .5px rgba(11,20,26,.13); }
+  .row { display: flex; flex-direction: column; max-width: 86%; }
+  .row.me { align-self: flex-end; align-items: flex-end; }
+  .row.bot { align-self: flex-start; }
+  .bubble { background: var(--wa-in); border-radius: 8px; padding: 6px 8px 4px 9px; font-size: 14.2px;
+    line-height: 1.38; box-shadow: 0 1px .5px rgba(11,20,26,.13); position: relative;
+    word-wrap: break-word; }
+  .me .bubble { background: var(--wa-out); }
+  .bot .bubble.tail { border-top-left-radius: 0; }
+  .me .bubble.tail { border-top-right-radius: 0; }
+  .bot .bubble.tail::before, .me .bubble.tail::before { content: ""; position: absolute; top: 0;
+    width: 8px; height: 13px; }
+  .bot .bubble.tail::before { left: -8px; background: linear-gradient(225deg, var(--wa-in) 50%, transparent 50%); }
+  .me .bubble.tail::before { right: -8px; background: linear-gradient(135deg, var(--wa-out) 50%, transparent 50%); }
+  .meta { float: right; font-size: 11px; color: var(--muted); margin: 6px 0 -2px 10px; white-space: nowrap; }
+  .meta .ticks { color: var(--wa-tick); margin-left: 2px; letter-spacing: -3px; }
+  .btns { display: flex; flex-direction: column; gap: 2px; margin-top: 2px; width: 100%; }
+  .btns div { background: var(--wa-in); color: var(--wa-btn); text-align: center; font-size: 14px;
+    padding: 9px 8px; border-radius: 8px; box-shadow: 0 1px .5px rgba(11,20,26,.13); font-weight: 500; }
+  .listbtn { border-top: 1px solid #e9edef; margin: 6px -8px -4px -9px; padding: 9px; text-align: center;
+    color: var(--wa-btn); font-weight: 500; font-size: 14px; }
+  .doc { background: var(--doc); border-radius: 6px; display: flex; gap: 10px; align-items: center;
+    padding: 10px; margin: 2px -4px 4px -5px; }
+  .me .doc { background: #c6efc0; }
+  .pdf { width: 30px; height: 36px; background: #e2493c; color: #fff; font-size: 9px; font-weight: 700;
+    border-radius: 3px; display: grid; place-items: end center; padding-bottom: 4px; flex: none; }
+  .doc b { display: block; font-size: 13.5px; font-weight: 500; }
+  .doc span { font-size: 11.5px; color: var(--muted); }
+  .shot { width: 190px; border-radius: 6px; overflow: hidden; margin: 1px -5px 4px -6px;
+    background: #fff; border: 1px solid #e0e0e0; font-size: 11px; text-align: center; }
+  .shot .top { background: #1a73e8; color: #fff; padding: 14px 6px 10px; }
+  .shot .ok { width: 38px; height: 38px; border-radius: 50%; background: #fff; color: #1a73e8;
+    display: grid; place-items: center; margin: 0 auto 6px; font-size: 22px; font-weight: 700; }
+  .shot .amt { font-size: 22px; font-weight: 700; }
+  .shot .lines { padding: 8px 10px; text-align: left; color: #444; line-height: 1.6; }
+  .selfie { width: 150px; height: 170px; border-radius: 6px; margin: 1px -5px 4px -6px;
+    background: linear-gradient(160deg, #cfd8dc, #90a4ae); display: grid; place-items: center;
+    font-size: 64px; }
+  .typing { display: flex; gap: 4px; padding: 6px 4px 4px; }
+  .typing i { width: 7px; height: 7px; border-radius: 50%; background: #8696a0; display: block;
+    animation: blink 1.2s infinite; }
+  .typing i:nth-child(2) { animation-delay: .2s; } .typing i:nth-child(3) { animation-delay: .4s; }
+  @keyframes blink { 0%, 60%, 100% { opacity: .35; } 30% { opacity: 1; } }
+  body.render .nav { display: none; }
+  .tapped { background: #d7efe8 !important; }
+  .opt.tapped .radio { border-color: #00a884; background: radial-gradient(#00a884 45%, transparent 50%); }
+  .finger { position: absolute; width: 46px; height: 46px; border-radius: 50%; pointer-events: none;
+    background: rgba(17,27,33,.22); border: 3px solid rgba(255,255,255,.95);
+    box-shadow: 0 0 0 9px rgba(0,128,105,.28); transform: translate(-50%, -50%); z-index: 5; }
+  .finger::after { content: "👆"; position: absolute; left: 14px; top: 26px; font-size: 30px; }
+  body.render .slide { gap: 6vw; padding: 2vh 5vw; }
+  body.render .phone { height: 95vh; }
+  body.render .copy { max-width: 820px; }
+  body.render .copy .step { font-size: 22px; }
+  body.render .copy h1 { font-size: 62px; }
+  body.render .copy ul { font-size: 28px; }
+  body.render .copy li { margin: 12px 0; }
+  body.render .title-slide h1 { font-size: 84px; }
+  body.render .title-slide p { font-size: 32px; }
+  body.render .logo { width: 140px; height: 140px; font-size: 72px; }
+  .tpl-head { font-size: 11.5px; color: var(--muted); margin-bottom: 2px; }
+
+  .inputbar { display: flex; align-items: center; gap: 6px; padding: 6px 6px 10px; }
+  .field { flex: 1; background: #fff; border-radius: 24px; padding: 10px 14px; color: #8696a0;
+    font-size: 15px; display: flex; gap: 10px; align-items: center; }
+  .field .typed { color: var(--ink); }
+  .mic { width: 44px; height: 44px; border-radius: 50%; background: #00a884; display: grid;
+    place-items: center; color: #fff; font-size: 18px; flex: none; }
+
+  .sheet { position: absolute; inset: auto 0 0 0; background: #fff; border-radius: 16px 16px 0 0;
+    box-shadow: 0 -4px 20px rgba(0,0,0,.2); padding: 8px 0 14px; }
+  .sheet::before { content: ""; display: block; width: 36px; height: 4px; background: #d1d7db;
+    border-radius: 2px; margin: 0 auto 8px; }
+  .sheet h4 { margin: 4px 16px 8px; font-size: 16px; font-weight: 600; }
+  .sheet .opt { display: flex; align-items: center; gap: 12px; padding: 9px 16px; }
+  .sheet .opt div { flex: 1; }
+  .sheet .opt b { display: block; font-size: 14.5px; font-weight: 500; }
+  .sheet .opt span { font-size: 12.5px; color: var(--muted); }
+  .sheet .radio { width: 18px; height: 18px; border-radius: 50%; border: 2px solid #8696a0; flex: none; }
+  .shade { position: absolute; inset: 0; background: rgba(11,20,26,.35); }
+
+  .payapp { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center;
+    background: #fff; gap: 10px; text-align: center; padding: 20px; }
+  .payapp .ok { width: 84px; height: 84px; border-radius: 50%; background: #1e8e3e; color: #fff;
+    display: grid; place-items: center; font-size: 44px; }
+  .payapp .amt { font-size: 34px; font-weight: 700; }
+  .payapp .muted { color: var(--muted); font-size: 14px; line-height: 1.6; }
+
+  @media (max-width: 860px) {
+    .slide.on { flex-direction: column; justify-content: flex-start; gap: 18px; overflow: auto;
+      height: auto; min-height: 100vh; padding: 20px 16px 70px; }
+    .copy { width: 100%; }
+    .phone { width: 300px; max-width: 100%; height: 620px; aspect-ratio: auto; }  /* never wider than the screen; old messages scroll off the top like WhatsApp */
+    .screen, .chat, .row { min-width: 0; }
+  }
+  .pic { width: 250px; background: #fff; border: 1px solid #e3e6e8; border-radius: 6px;
+    margin: 1px -5px 5px -6px; padding: 8px; font-size: 8.5px; color: #111b21; }
+  .pic > b { display: block; font-size: 11px; } .pic > span { color: #667781; display: block; margin-bottom: 5px; }
+  .pstats { display: grid; grid-template-columns: repeat(4, 1fr); gap: 3px; margin-bottom: 5px; }
+  .pstats div { background: #f5f6f6; border-radius: 4px; padding: 3px 4px; }
+  .pstats span { display: block; color: #667781; font-size: 7px; } .pstats b { font-size: 9px; }
+  .pic table { width: 100%; border-collapse: collapse; }
+  .pic th { text-align: left; color: #667781; font-weight: 600; background: #f0f2f5; padding: 2px 3px; }
+  .pic td { padding: 2.5px 3px; border-top: 1px solid #eef0f1; }
+  .pic tr.rv td { background: #fdf3dc; }
+  .pill { font-style: normal; border-radius: 6px; padding: 0 4px; }
+  .pill.Paid { background: #e7f6ec; color: #1e7b34; } .pill.Unpaid { background: #fdecea; color: #b3261e; }
+  .pdf.xls { background: #1d7a45; }
+  .sheet .sec { color: #008069; font-size: 12.5px; font-weight: 600; padding: 7px 16px 2px; }
+  .sheet .opt { padding: 6px 16px; }
+</style>
+</head>
+<body>
+<div class="deck" id="deck"></div>
+<div class="nav"><button id="prev" aria-label="Previous slide">‹</button><span id="count"></span>
+  <button id="next" aria-label="Next slide">›</button></div>
+
+<script>
+// Test association and test admin (not real people)
+const SOC = "Green Valley Apartments", CODE = "GREENVALLEY";
+const BOT = "Apartment Management System";
+const P = new URLSearchParams(location.search), RENDER = P.has("render");
+const STAMP = "14 Oct 2026, 2:00 pm";
+
+// the 📋 Menu list, exactly as the bot sends it (sections and rows)
+const MENU_SHEET = { title: "📋 Menu", rows: [
+  { section: "💰 Monthly work" },
+  ["📤 Upload bank statement", "PDF / Excel / CSV from net banking"],
+  ["📊 Maintenance dues", "This month, then download the Excel"],
+  ["✅ Import Finalized Excel", "Saves payments, makes receipts"],
+  ["🧾 Send receipts", "Receipts to residents on WhatsApp"],
+  ["🛠️ Fix a receipt", "Wrong flat or month, wrong amount, or not ours"],
+  ["🔔 Unpaid", "Send unpaid notices (PDF) or a reminder"],
+  { section: "📄 Reports" }, ["🧾 No dues receipts", "Receipts of the fully paid flats"],
+  { section: "🏢 Society" }, ["📄 NOC", "Requests to issue, and the NOCs issued"],
+  ["⚙️ Settings", "Setup Excel, residents, admins, late fee"],
+  { section: "🆘 Help" }, ["🆘 Support", "Something not working in the app?"]] };
+const SETTINGS_SHEET = { title: "Settings", rows: [
+  { section: "🏠 Flats & residents" }, ["Update setup Excel", "Flats, maintenance, owners, tenants, admins"],
+  { section: "🏢 Society" }, ["Society name", SOC], ["Address", "12 Lake View Road, Coimbatore - 641025"],
+  ["Late fee", "On: added automatically every month"], ["Additional fund", "Painting, repairs, other expenses"],
+  ["Signature", "On receipts (no name shown)"],
+  { section: "👥 Admins" }, ["Admins", "2 admins now · add, remove, another apartment"],
+  { section: "🙋 You" }, ["My name", "Asha"], ["My role", "Treasurer"]] };
+const SETUP_CAPTION = "📋 *Update setup Excel*\n\nThis is your setup now: flats, monthly maintenance, opening balances and residents. Change what you need (new flats, new maintenance amount, add or remove residents), then *send the file back here*.\nA flat you delete from the file is removed with its saved dues (not if it has receipts).\n\nI'll list every change; nothing is saved until you tap *Confirm*.";
+
+// pictures the bot sends (drawn small, like the real ones)
+const PICS = {
+  dashboard: { title: SOC, sub: `Dashboard · as of ${STAMP}`,
+    stats: [["Month", "Oct-2026"], ["Collected", "₹12,400"], ["Pending", "₹9,300"], ["Paid / unpaid", "4 / 2"]],
+    head: ["Flat", "Residents", "Balance", "Status"],
+    rows: [["A-101", "Asha", "₹0", "Paid"], ["A-102", "Ravi Kumar", "₹3,100", "Unpaid"],
+           ["A-103", "Priya N", "₹0", "Paid"], ["B-201", "Suresh Babu", "₹6,200", "Unpaid"],
+           ["B-202", "Anand R", "₹0", "Paid"], ["B-203", "Lakshmi S", "₹0", "Paid"]] },
+  maintenance: { title: SOC, sub: `Maintenance dues · Oct-2026 · as of ${STAMP}`,
+    head: ["Flat", "Total due", "Paid", "Remarks"],
+    rows: [["A-101", "₹3,100", "₹3,100", "Matched with bank statement"], ["A-102", "₹3,100", "—", ""],
+           ["A-103", "₹3,100", "₹3,100", "Matched with bank statement"],
+           ["B-201", "₹6,200", "—", "REVIEW: proof not found"],
+           ["B-202", "₹3,100", "₹3,100", "Matched with bank statement"],
+           ["B-203", "₹3,100", "₹3,100", "Matched with bank statement"]], review: 3 },
+  unpaid: { title: SOC, sub: `Unpaid · as of ${STAMP}`, head: ["Flat", "Resident", "Months", "Balance"],
+    rows: [["A-102", "Ravi Kumar", "Oct-2026", "₹3,100"], ["B-201", "Suresh Babu", "Sep, Oct-2026", "₹6,200"]] },
+  nodues: { title: SOC, sub: `No dues receipts · Oct-2026 · as of ${STAMP}`, head: ["Flat", "Receipt", "Amount"],
+    rows: [["A-101", "GV/2026/10/0001", "₹3,100"], ["A-103", "GV/2026/10/0002", "₹3,100"],
+           ["B-202", "GV/2026/10/0003", "₹3,100"], ["B-203", "GV/2026/10/0004", "₹3,100"]] },
+};
+
+const MENU_MSG = { bot: "📋 What would you like to do?", t: "14:00", list: "📋 Menu", pre: true };
+const SUMMARY = "Oct-2026: 6 payment(s) in the bank statements · matched to flats: 4\nFlats paid: 4 · not paid yet: 2\n⚠️ 1 row(s) marked REVIEW (yellow): please check.";
+const pick = (row, t) => [{ tap: "📋 Menu" }, { sheet: MENU_SHEET }, { tap: row }, { sheet: "close" }, { me: row, t }];
+
+const SLIDES = window.SLIDES = [
+  { title: true },
+  { step: "Start", h: "Open the admin menu",
+    bullets: ["Send <b>ADMIN</b> any time.", "You get the dashboard picture: the month, collected, pending and every flat.",
+              "Tap <b>📋 Menu</b> for everything you can do."],
+    chat: [{ chip: "Today" }, { me: "ADMIN", t: "14:00" },
+      { bot: `📊 *${SOC}* · as of ${STAMP}`, t: "14:00", pic: "dashboard" },
+      { bot: "📋 What would you like to do?", t: "14:00", list: "📋 Menu" },
+      { tap: "📋 Menu" }, { sheet: MENU_SHEET }] },
+  { step: "Monthly work · 1", h: "Upload the bank statement",
+    bullets: ["📋 Menu → 📤 Upload bank statement.", "Send the statement as PDF, Excel or CSV (several files are fine).",
+              "The bot reads it, matches residents' payment proofs and sends a summary."],
+    chat: [{ chip: "Today" }, MENU_MSG, ...pick("📤 Upload bank statement", "14:01"),
+      { bot: "🏦 Send the bank statement here as *PDF, Excel or CSV* (you can send several together, e.g. one per week). A payment that's in more than one file is counted once.\n\nI'll compare it with the payment screenshots residents sent and give you *Maintenance_dues.xlsx*: who paid, who hasn't, and rows to check in yellow.", t: "14:01" },
+      { me: "", doc: "Statement-Oct-2026.pdf", t: "14:02" },
+      { bot: "📥 Got it. Reading your statement… Send any other statement files now: I'll read them all and send a summary in about a minute.", t: "14:02" },
+      { bot: `📥 Statement read: 6 new payment(s).\n${SUMMARY}\n\nNo receipts are made yet.\n👉 Get the Excel from *ADMIN → 📊 Maintenance dues*, check it, then send it with *Import Finalized Excel*.`, t: "14:03" }] },
+  { step: "Monthly work · 2", h: "Check Maintenance dues",
+    bullets: ["📋 Menu → 📊 Maintenance dues.", "A picture of this month: who paid, who hasn't, rows to check in yellow.",
+              "Tap <b>⬇ Download Excel</b> to check and correct it."],
+    chat: [{ chip: "Today" }, MENU_MSG, ...pick("📊 Maintenance dues", "14:05"),
+      { bot: `📊 Maintenance dues · ${SOC}`, t: "14:05", pic: "maintenance" },
+      { bot: "📊 Maintenance dues: want the file too?", t: "14:05", buttons: ["⬇ Download Excel", "📋 Menu"] },
+      { tap: "⬇ Download Excel" }, { me: "⬇ Download Excel", t: "14:05" },
+      { bot: "📊 Maintenance dues Oct-2026: bank statement matched with the residents' payment screenshots", t: "14:05", doc: "Maintenance_dues.xlsx" },
+      { bot: `${SUMMARY}\n\nNo receipts are made yet.\n👉 Check the Excel carefully: amounts, dates and the yellow rows. Correct anything that's wrong, then send it with *Import Finalized Excel* in the admin menu to save the payments and make the receipts.`, t: "14:05" }] },
+  { step: "Monthly work · 3", h: "Import the Finalized Excel",
+    bullets: ["📋 Menu → ✅ Import Finalized Excel.", "Send the Maintenance_dues.xlsx you checked.",
+              "Check the summary, then tap <b>Confirm</b>: payments are saved and receipts made."],
+    chat: [{ chip: "Today" }, MENU_MSG, ...pick("✅ Import Finalized Excel", "14:20"),
+      { bot: "✅ *Import Finalized Excel*\n\nSend the *Maintenance_dues.xlsx* you checked (the one from Upload statement, with your corrections). I'll show a summary first; payments are saved and receipts made only when you tap *Confirm*. Receipts go to residents only when you tap *Send receipts*.", t: "14:20" },
+      { me: "", doc: "Maintenance_dues.xlsx", t: "14:21" },
+      { bot: "📄 Dues sheet — Oct-2026\n✅ PAID 4 · 🟡 PARTIAL 0 · 🔴 UNPAID 2\nNew payments: 4 (₹12,400)\n\n👉 Tap *Confirm* to save, or *Cancel*.", t: "14:21", buttons: ["Confirm", "Cancel"] },
+      { tap: "Confirm" }, { me: "Confirm", t: "14:21" },
+      { bot: "✅ Saved 6 row(s). 4 receipt(s) made and ready. Nothing has been sent to residents yet: tap *Send receipts* for the payers and *Unpaid* for the rest.", t: "14:21", buttons: ["🧾 Send receipts", "🔔 Unpaid", "Later"] }] },
+  { step: "Monthly work · 4", h: "Send receipts",
+    bullets: ["Tap <b>🧾 Send receipts</b> (or 📋 Menu → 🧾 Send receipts).", "Each payer gets their receipt PDF on WhatsApp.",
+              "You get a summary of who got it."],
+    chat: [{ chip: "Today" },
+      { bot: "✅ Saved 6 row(s). 4 receipt(s) made and ready. Nothing has been sent to residents yet: tap *Send receipts* for the payers and *Unpaid* for the rest.", t: "14:21", buttons: ["🧾 Send receipts", "🔔 Unpaid", "Later"], pre: true },
+      { tap: "🧾 Send receipts" }, { me: "🧾 Send receipts", t: "14:22" },
+      { bot: "🧾 Sending receipts… I'll message you a summary when done.", t: "14:22" },
+      { bot: `🧾 *${SOC}* · receipts\n✅ 4 sent now`, t: "14:23" }] },
+  { step: "Monthly work · 5", h: "Unpaid: remind the flats that owe",
+    bullets: ["📋 Menu → 🔔 Unpaid: a picture of the flats that owe.", "<b>👋 Remind unpaid</b>: a short message asking them to pay, or to send their proof.",
+              "Tap <b>Send</b>, and you get a summary."],
+    chat: [{ chip: "Today" }, MENU_MSG, ...pick("🔔 Unpaid", "14:30"),
+      { bot: `🔔 Unpaid · ${SOC}`, t: "14:30", pic: "unpaid" },
+      { bot: "🔔 *Unpaid*: what should go to these flats?\n• *Send unpaid notices*: each flat's payment reminder PDF\n• *Remind unpaid*: a short message asking them to pay, or to send the payment screenshot / reference number\n• *Download PDF*: the notices file, to print or forward", t: "14:30", buttons: ["📄 Send notices", "👋 Remind unpaid", "⬇ Download PDF"] },
+      { tap: "👋 Remind unpaid" }, { me: "👋 Remind unpaid", t: "14:30" },
+      { bot: "👋 *Remind unpaid*: 2 flat(s) still owe (A-102, B-201). Send 2 resident(s) a reminder asking them to pay, or to share the payment screenshot / reference number if they already paid?", t: "14:30", buttons: ["Send", "Cancel"] },
+      { tap: "Send" }, { me: "Send", t: "14:31" },
+      { bot: "👋 Sending the reminder to flats that still owe… I'll message you a summary.", t: "14:31" },
+      { bot: `👋 *${SOC}* · Remind unpaid\n✅ 2 sent now`, t: "14:31" }] },
+  { step: "Monthly work · 5", h: "Unpaid: send notices or download them",
+    bullets: ["<b>📄 Send notices</b>: the payment reminder PDF, for dues a month or more overdue.",
+              "<b>⬇ Download PDF</b>: all notices in one file, to print or forward."],
+    chat: [{ chip: "Today" },
+      { bot: "🔔 *Unpaid*: what should go to these flats?\n• *Send unpaid notices*: each flat's payment reminder PDF\n• *Remind unpaid*: a short message asking them to pay, or to send the payment screenshot / reference number\n• *Download PDF*: the notices file, to print or forward", t: "14:30", buttons: ["📄 Send notices", "👋 Remind unpaid", "⬇ Download PDF"], pre: true },
+      { tap: "📄 Send notices" }, { me: "📄 Send notices", t: "14:32" },
+      { bot: "📄 *Send unpaid notices*: 1 flat(s) owe from an earlier month. Send the payment reminder PDF to 1 mobile number(s)?\n⏸ 1 flat(s) owe only this month's maintenance (A-102). Reminders go only after a month: they'll be reminded next month if still unpaid.", t: "14:32", buttons: ["Send", "Cancel"] },
+      { tap: "Send" }, { me: "Send", t: "14:32" },
+      { bot: "📄 Sending unpaid notices… I'll message you a summary.", t: "14:32" },
+      { bot: `📄 *${SOC}* · unpaid notices\n✅ 1 sent now`, t: "14:33" },
+      { me: "⬇ Download PDF", t: "14:34" },
+      { bot: `🔔 Unpaid notices · ${SOC}\n2 flat(s) owe ₹9,300 in all. One page per flat, to print or forward.\nTo send them on WhatsApp: *Unpaid* → *Send unpaid notices*.`, t: "14:34", doc: "Unpaid-notices-2026-10-14.pdf" }] },
+  { step: "Reports", h: "No dues receipts",
+    bullets: ["📋 Menu → 🧾 No dues receipts.", "A picture of the fully paid flats and their receipts.",
+              "Tap <b>⬇ Download PDF</b>: every receipt in one file."],
+    chat: [{ chip: "Today" }, MENU_MSG, ...pick("🧾 No dues receipts", "14:40"),
+      { bot: `🧾 No dues receipts · ${SOC}`, t: "14:40", pic: "nodues" },
+      { bot: "🧾 No dues receipts: want the file too?", t: "14:40", buttons: ["⬇ Download PDF", "📋 Menu"] },
+      { tap: "⬇ Download PDF" }, { me: "⬇ Download PDF", t: "14:40" },
+      { bot: "🧾 No dues receipts · Oct-2026\n4 flat(s) fully paid · 4 receipt(s)", t: "14:40", doc: "No-dues-receipts-2026-10.pdf" }] },
+  { step: "Alerts", h: "A resident sent a payment proof",
+    bullets: ["Every admin gets the resident's proof, with what the bank statement shows.",
+              "If it matches, send the receipt as usual.",
+              "If it doesn't, tap <b>❌ Did not match</b>: the resident is asked to send the details again."],
+    chat: [{ chip: "Today" },
+      { bot: "Payment proof · Flat A-102", t: "09:18", shot: true },
+      { bot: `💸 *Payment proof · Flat A-102* · ${SOC}\nRavi Kumar · +919876543211\n📸 Screenshot · 14 Oct, 09:17 AM\n🏦 Bank statement: ❓ not found in the statements uploaded so far\n\nIf it matches, send the receipt as usual (Import Finalized Excel → Send receipts). If it doesn't, tap ❌ Did not match.`, t: "09:18", buttons: ["❌ Did not match"] },
+      { tap: "❌ Did not match" }, { me: "❌ Did not match", t: "16:05" },
+      { bot: "❌ Told flat A-102 that the payment did not match our bank records, and asked them to send the details again correctly or contact the association.", t: "16:05" }] },
+  { step: "Alerts", h: "A new resident asks to join",
+    bullets: ["A number not on your list sends JOIN, then its name and flat number.",
+              "Every admin gets the request: name, flat and the last digits of the mobile.",
+              "Approve as owner or tenant, or Reject. The resident is told on WhatsApp."],
+    chat: [{ chip: "Today" },
+      { bot: `👤 *Join request* — ${SOC}\nName: Meena Raghavan\nFlat: B-202\nMobile: ******0123`, t: "11:10", buttons: ["Approve as owner", "Approve as tenant", "Reject"] },
+      { tap: "Approve as tenant" }, { me: "Approve as tenant", t: "11:12" },
+      { bot: "✅ Approved Meena Raghavan as tenant of flat B-202.\nAdded to the resident list: you'll see them in the setup Excel (Settings → Flats & residents → Update setup Excel).", t: "11:12" }] },
+  { step: "Settings", h: "Settings",
+    bullets: ["📋 Menu → ⚙️ Settings.", "Flats & residents (the setup Excel), society name and address, late fee, additional fund, signature, admins, your name and role.",
+              "Tap one to change it."],
+    chat: [{ chip: "Today" }, MENU_MSG, ...pick("⚙️ Settings", "15:00"),
+      { bot: `⚙️ *${SOC}* · settings\nTap *Settings* and pick what to change.`, t: "15:00", list: "Settings" },
+      { tap: "Settings" }, { sheet: SETTINGS_SHEET }] },
+  { step: "Settings · Flats & residents", h: "Add or remove residents: the setup Excel",
+    bullets: ["⚙️ Settings → <b>Update setup Excel</b>.",
+              "You get today's setup: flats, maintenance, opening balances and residents (owner or tenant).",
+              "Add or remove residents, flats or maintenance in the file, then send it back."],
+    chat: [{ chip: "Today" },
+      { bot: `⚙️ *${SOC}* · settings
+Tap *Settings* and pick what to change.`, t: "15:00", list: "Settings", pre: true },
+      { tap: "Settings" }, { sheet: SETTINGS_SHEET }, { tap: "Update setup Excel" }, { sheet: "close" },
+      { me: "Update setup Excel", t: "15:01" },
+      { bot: SETUP_CAPTION, t: "15:01", doc: "society_setup.xlsx" }] },
+  { step: "Settings · Flats & residents", h: "Send it back, check, Confirm",
+    bullets: ["Send the edited <b>society_setup.xlsx</b> back in the chat.",
+              "You see every change, line by line: residents added or removed, flats, maintenance.",
+              "Tap <b>Confirm</b> to save. Nothing changes before that."],
+    chat: [{ chip: "Today" },
+      { me: "", doc: "society_setup.xlsx", t: "15:08" },
+      { bot: `📄 *${SOC}* · 3 changes:
+✏️ Flat A-103: maintenance ₹3,100 → ₹3,300 (from the next month you upload)
+➕ Flat B-201: add resident Kumar S (******1234) as tenant
+➖ Flat B-201: remove resident Suresh Babu (******3667)
+
+Tap *Confirm* to save these changes.`, t: "15:08", buttons: ["Confirm", "Cancel"] },
+      { tap: "Confirm" }, { me: "Confirm", t: "15:09" },
+      { bot: "✅ Setup updated: 3 changes saved.", t: "15:09" }] },
+  { step: "Test", h: "See what residents see",
+    bullets: ["An admin who lives here sends <b>RESIDENT</b>: the bot answers as a resident of their flat.",
+              "Send <b>ADMIN</b> to go back to the admin menu."],
+    chat: [{ chip: "Today" }, { me: "RESIDENT", t: "16:00" },
+      { bot: `🧪 *Resident mode*: you see what residents see. Send *ADMIN* to go back.\n\n👋 Hi *Asha*!\n\n🏢 *${SOC}*\n🏠 Flat A-101 · Oct-2026\n✅ All paid. Thank you!\n\nTap a button below. Problem with the app? Send *SUPPORT*.`, t: "16:00", buttons: ["💸 I've paid", "🧾 Receipts", "🆘 Support"] },
+      { me: "ADMIN", t: "16:01" },
+      { bot: `📊 *${SOC}* · as of 14 Oct 2026, 4:01 pm`, t: "16:01", pic: "dashboard" },
+      { bot: "📋 What would you like to do?", t: "16:01", list: "📋 Menu" }] },
+  { step: "Help", h: "Need help? Support",
+    bullets: ["📋 Menu → 🆘 Support, or send SUPPORT.", "Type the problem, or send a screenshot.",
+              "It goes straight to the support team, and you get a ticket number."],
+    chat: [{ chip: "Today" }, MENU_MSG, ...pick("🆘 Support", "17:00"),
+      { bot: "🆘 *Support*\n\nTell us what's not working: type it, or send a screenshot or file. It goes straight to the support team.", t: "17:00", buttons: ["Cancel"] },
+      { me: "Statement upload shows 0 payments", t: "17:01" },
+      { bot: "✅ Sent to the support team. Your ticket number is *S-0002*. We'll get back to you here on WhatsApp.", t: "17:01" }] },
+  { end: true },
+];
+
+function esc(s) { return s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;"); }
+function fmt(s) {  // WhatsApp formatting: *bold*, _italic_, new lines
+  return esc(s).replace(/\*([^*\n]+)\*/g, "<b>$1</b>").replace(/(^|\s)_([^_\n]+)_/g, "$1<i>$2</i>")
+    .replace(/\n/g, "<br>");
+}
+const ICONS = `<div class="icons"><svg viewBox="0 0 24 24"><path d="M17 10.5V7a1 1 0 0 0-1-1H4a1 1 0 0 0-1 1v10a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1v-3.5l4 4v-11z"/></svg><svg viewBox="0 0 24 24"><path d="M6.6 10.8a15.1 15.1 0 0 0 6.6 6.6l2.2-2.2a1 1 0 0 1 1-.25 11.4 11.4 0 0 0 3.6.57 1 1 0 0 1 1 1V20a1 1 0 0 1-1 1A17 17 0 0 1 3 4a1 1 0 0 1 1-1h3.5a1 1 0 0 1 1 1 11.4 11.4 0 0 0 .57 3.6 1 1 0 0 1-.25 1z"/></svg><svg viewBox="0 0 24 24"><circle cx="12" cy="5" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="12" cy="19" r="2"/></svg></div>`;
+
+function picture(key) {
+  const p = PICS[key];
+  const stats = p.stats ? `<div class="pstats">${p.stats.map(([k, v]) => `<div><span>${k}</span><b>${v}</b></div>`).join("")}</div>` : "";
+  const rows = p.rows.map((r, i) => `<tr class="${i === p.review ? "rv" : ""}">${r.map(c =>
+    `<td>${c === "Paid" || c === "Unpaid" ? `<i class="pill ${c}">${c}</i>` : esc(c)}</td>`).join("")}</tr>`).join("");
+  return `<div class="pic"><b>${esc(p.title)}</b><span>${esc(p.sub)}</span>${stats}
+    <table><tr>${p.head.map(h => `<th>${h}</th>`).join("")}</tr>${rows}</table></div>`;
+}
+
+function message(m, prev, tap) {
+  if (m.chip) return `<div class="chip">${m.chip}</div>`;
+  if (m.typing) return `<div class="row bot"><div class="bubble tail"><div class="typing"><i></i><i></i><i></i></div></div></div>`;
+  const me = "me" in m, side = me ? "me" : "bot";
+  const tail = !prev || prev.chip || ("me" in prev) !== me ? " tail" : "";
+  const ticks = me ? `<span class="ticks">✓✓</span>` : "";
+  let inner = "";
+  if (m.pic) inner += picture(m.pic);
+  if (m.shot) inner += `<div class="shot"><div class="top"><div class="ok">✓</div><div class="amt">₹3,100</div>Payment successful</div><div class="lines">To: ${SOC}<br>UPI Ref No: 624407160066<br>08 Oct 2026, 7:42 pm</div></div>`;
+  if (m.selfie) inner += `<div class="selfie">🙂</div>`;
+  if (m.doc) {
+    const xl = /\.xlsx$/.test(m.doc);
+    inner += `<div class="doc"><div class="pdf${xl ? " xls" : ""}">${xl ? "XLS" : "PDF"}</div><div><b>${esc(m.doc)}</b><span>${xl ? "Microsoft Excel · 18 kB" : "1 page · PDF · 48 kB"}</span></div></div>`;
+  }
+  const text = me ? m.me : m.bot;
+  inner += `${text ? fmt(text) : ""}<span class="meta">${m.t}${ticks}</span>`;
+  if (m.list) inner += `<div class="listbtn${tap === m.list ? " tapped" : ""}">☰ ${esc(m.list)}</div>`;
+  const buttons = m.buttons ? `<div class="btns">${m.buttons.map(b => `<div${b === tap ? ' class="tapped"' : ""}>${esc(b)}</div>`).join("")}</div>` : "";
+  return `<div class="row ${side}"><div class="bubble${tail}">${inner}</div>${buttons}</div>`;
+}
+
+function sheetHtml(sh, tap) {
+  return `<div class="shade"></div><div class="sheet"><h4>${esc(sh.title)}</h4>${sh.rows.map(r => r.section
+    ? `<div class="sec">${esc(r.section)}</div>`
+    : `<div class="opt${r[0] === tap ? " tapped" : ""}"><div><b>${esc(r[0])}</b><span>${esc(r[1])}</span></div><span class="radio"></span></div>`).join("")}</div>`;
+}
+
+function phone(s) {
+  const head = `<div class="status"><span>9:41</span><span>▂▄▆ ● 87%</span></div>
+    <div class="head"><span class="back">←</span><div class="avatar">🏢</div>
+      <div class="who"><b>${BOT}</b><span>Business account</span></div>${ICONS}</div>`;
+  const items = RENDER && P.has("upto") ? s.chat.slice(0, Number(P.get("upto"))) : s.chat;
+  const last = items[items.length - 1];
+  const tap = RENDER && last && last.tap ? last.tap : null;
+  const open = items.reduce((on, m) => m.sheet ? (m.sheet === "close" ? null : m.sheet) : on, null);
+  let chat = items.filter(m => !m.tap && !m.sheet);
+  if (RENDER && P.get("typing") === "1") chat = chat.concat([{ typing: true }]);
+  const msgs = chat.map((m, i) => message(m, chat[i - 1], i === chat.length - 1 && !open ? tap : null)).join("");
+  return `<div class="phone"><div class="screen">${head}<div class="chat">${msgs}</div>
+    <div class="inputbar"><div class="field">🙂 <span>Message</span><span style="margin-left:auto">📎 📷</span></div>
+    <div class="mic">🎤</div></div>${open ? sheetHtml(open, tap) : ""}</div></div>`;
+}
+
+function slide(s) {
+  if (s.title) return `<section class="slide title-slide"><div class="logo">🛠</div>
+    <h1>Maintenance dues on WhatsApp</h1><p>A guide for the admins of ${SOC}</p>
+    <p>Statement · Maintenance dues · Import · Receipts · Unpaid · Settings</p></section>`;
+  if (s.end) return `<section class="slide title-slide"><div class="logo">✅</div>
+    <h1>That's it!</h1><p>Send <b>ADMIN</b> any time for the dashboard and the 📋 Menu.</p>
+    <p>Every month: Upload statement → Maintenance dues → Import Finalized Excel → Send receipts → Unpaid.</p></section>`;
+  return `<section class="slide"><div class="copy"><div class="step">${s.step}</div><h1>${s.h}</h1>
+    <ul>${s.bullets.map(b => `<li>${b}</li>`).join("")}</ul></div>${phone(s)}</section>`;
+}
+
+const deck = document.getElementById("deck");
+deck.innerHTML = SLIDES.map(slide).join("");
+const all = [...deck.children];
+let at = 0;
+if (RENDER) { document.body.classList.add("render"); at = Number(P.get("slide")) || 0; }
+else try { at = Math.min(Number(localStorage.getItem("admin-slide")) || 0, all.length - 1); } catch (e) {}
+function show(i) {
+  at = Math.max(0, Math.min(all.length - 1, i));
+  all.forEach((el, n) => el.classList.toggle("on", n === at));
+  all[at].querySelectorAll(".tapped").forEach(el => {
+    const screen = el.closest(".screen"), a = el.getBoundingClientRect(), b = screen.getBoundingClientRect();
+    const f = document.createElement("div");
+    f.className = "finger";
+    f.style.left = `${a.left - b.left + a.width * 0.78}px`;  // beside the text, not over it
+    f.style.top = `${a.top - b.top + a.height / 2}px`;
+    screen.appendChild(f);
+  });
+  document.getElementById("count").textContent = `${at + 1} / ${all.length}`;
+  if (!RENDER) try { localStorage.setItem("admin-slide", at); } catch (e) {}
+}
+document.getElementById("prev").onclick = () => show(at - 1);
+document.getElementById("next").onclick = () => show(at + 1);
+document.addEventListener("keydown", e => {
+  if (["ArrowRight", "PageDown", " "].includes(e.key)) { e.preventDefault(); show(at + 1); }
+  if (["ArrowLeft", "PageUp"].includes(e.key)) { e.preventDefault(); show(at - 1); }
+  if (e.key === "Home") show(0);
+  if (e.key === "End") show(all.length - 1);
+});
+show(at);
+</script>
+</body>
+</html>

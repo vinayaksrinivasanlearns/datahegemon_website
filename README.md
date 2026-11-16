@@ -1,37 +1,59 @@
-# DataHegemon — Company Website
+# DataHegemon — Apartment Management System website
 
-Marketing website for **DataHegemon**, an automation & data engineering studio.
+Marketing website for the **Apartment Management System**: maintenance dues, receipts and
+reminders for housing societies, on WhatsApp.
 
-🌐 **Live:** https://datahegemon.co.in
+🌐 **Live:** https://datahegemon.co.in · Contact: info@datahegemon.co.in
 
-## About
+The app itself (WhatsApp bot and admin portal at `app.datahegemon.co.in`) lives in a separate
+project. This repository is only the public website; it links to the app's login and privacy pages.
 
-A single-page, fully self-contained website — plain HTML, CSS, and vanilla JavaScript with **no build step and no dependencies**. It showcases DataHegemon's automation capabilities and case studies, with a working contact form and a reels-style interactive project gallery.
+## What's on the page
 
-The logo, all styles, and all scripts are embedded directly in the HTML, so the entire site is one portable file.
+- Features, the monthly cycle and the full flow (resident · committee · system)
+- Narrated 1080p video guides for residents and admins (`public/videos/`)
+- Interactive step-by-step WhatsApp guides (`public/guides/*.html`, self-contained)
+- Contact form (opens the visitor's email app, addressed to info@datahegemon.co.in)
 
-## Structure
+Everything described must match the **current** app code. Features removed from the app
+(e.g. the join selfie, the 2-minute chat close, Update/Remove a resident) must not appear here.
 
+## Develop
+
+```bash
+npm install
+npm run dev      # http://localhost:3000
+npm run lint
+npm run build    # output in dist/
 ```
-deploy/
-└── index.html   # the entire website (styles, scripts, and logo embedded)
+
+React 19 + Vite. Page: `src/App.jsx`, styles: `src/styles.css`.
+
+## Deploy (Netlify)
+
+The site is the Netlify project **datahegemoncoin**, deployed manually (no Git link):
+
+```bash
+npm run build
+npx netlify-cli deploy --dir dist --site bea76d44-969c-49c0-9837-4d400e7018ed --prod
 ```
 
-## Hosting & deployment
+Netlify keeps every deploy; roll back from the project's **Deploys** tab.
 
-The site is hosted on **Netlify**.
+## Videos
 
-- **Manual deploy:** drag the `deploy/` folder onto the site's **Deploys** tab in Netlify.
-  (Do not use the `app.netlify.com/drop` page — that creates a new site each time.)
-- **Contact form:** handled by **Netlify Forms**. Submissions appear under **Forms → contact**
-  in the Netlify dashboard and are emailed to `info@datahegemon.co.in`.
-- **HTTPS:** free Let's Encrypt certificate, auto-renewed by Netlify.
+`.narration/` rebuilds the narrated videos from the app's 4K slide videos:
 
-## Editing
+- `script.py` — one narration line per slide (`full` and `short`), and `RENDERED`: slides
+  re-rendered from `public/guides/` because the app changed (or `"skip"` to drop one)
+- `build.py SRC_DIR OUT_DIR` — voice (en-US-ChristopherNeural via edge-tts), 1080p H.264, frame
+  holds where a line is longer than its slide; then copy `OUT_DIR/*.mp4` to `public/videos/`
+- `cuts.py` — finds slide start times in a source video
 
-Everything lives in `deploy/index.html`. Open it, make your changes, then redeploy the
-`deploy/` folder to Netlify.
+Re-render a changed guide slide as stills with the guides' render mode:
+`/guides/admin-steps.html?render&slide=N&upto=K` (add `&typing=1` for the typing dots).
 
-## Contact
+## Archive
 
-📧 info@datahegemon.co.in
+`archive/automation-studio/index.html` is the previous site (DataHegemon — Automation & Data
+Engineering Studio), live until 16 Nov 2026. It is self-contained and is not deployed.

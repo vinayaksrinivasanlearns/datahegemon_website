@@ -1,13 +1,29 @@
-# This repo intentionally tracks ONLY the deploy folder (the public site),
-# plus this file and the README. Everything else in the working directory
-# (private project notes, logo source, screenshots, etc.) is ignored.
+# Logs
+logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+lerna-debug.log*
 
-/*
-!/.gitignore
-!/README.md
-!/deploy/
+node_modules
+dist
+.playwright-mcp
+.netlify
+.narration/work
+.narration/out
+__pycache__
+dist-ssr
+*.local
 
-# OS / editor noise (also inside deploy/)
+# Editor directories and files
+.vscode/*
+!.vscode/extensions.json
+.idea
 .DS_Store
-Thumbs.db
-*.swp
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
