@@ -11,6 +11,16 @@
   </head>
 
   <body>
+    <!-- For Netlify Forms: Netlify reads this at deploy time (the real form is drawn by React).
+         Keep the name and fields in sync with the contact form in src/App.jsx. -->
+    <form name="contact" data-netlify="true" netlify-honeypot="bot-field" hidden>
+      <input type="text" name="bot-field" />
+      <input type="text" name="name" />
+      <input type="email" name="email" />
+      <input type="tel" name="phone" />
+      <input type="text" name="society" />
+      <textarea name="message"></textarea>
+    </form>
     <div id="root"></div>
     <script type="module" src="/src/main.jsx"></script>
   </body>

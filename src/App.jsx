@@ -142,7 +142,8 @@ function App() {
   const [videoWho, setVideoWho] = useState('resident')
   const [videoLen, setVideoLen] = useState('short')
   const [guide, setGuide] = useState('resident')
-  const [form, setForm] = useState({ name: '', society: '', phone: '', message: '' })
+  const [form, setForm] = useState({ 'bot-field': '', name: '', email: '', phone: '', society: '', message: '' })
+  const [sendState, setSendState] = useState('idle') // idle | sending | sent | error
 
   const residentsRef = useFadeIn()
   const featuresRef = useFadeIn()
@@ -166,17 +167,22 @@ function App() {
 
   const video = VIDEOS[videoWho][videoLen]
 
-  const sendMail = (e) => {
+  // Netlify Forms: the hidden <form name="contact"> in index.html registers the fields at deploy
+  // time; submissions are emailed to info@datahegemon.co.in (Netlify → Forms → notifications).
+  const sendForm = async (e) => {
     e.preventDefault()
-    const subject = `Apartment Management System enquiry${form.society ? ` · ${form.society}` : ''}`
-    const body = [
-      `Name: ${form.name}`,
-      `Society / apartment: ${form.society}`,
-      `Phone: ${form.phone}`,
-      '',
-      form.message,
-    ].join('\n')
-    window.location.href = `mailto:${EMAIL}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`
+    setSendState('sending')
+    try {
+      const res = await fetch('/', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+        body: new URLSearchParams({ 'form-name': 'contact', ...form }).toString(),
+      })
+      if (!res.ok) throw new Error(`HTTP ${res.status}`)
+      setSendState('sent')
+    } catch {
+      setSendState('error')
+    }
   }
   const field = (k) => ({ value: form[k], onChange: (e) => setForm({ ...form, [k]: e.target.value }) })
 
@@ -481,32 +487,55 @@ function App() {
                 </div>
               </div>
             </div>
-            <form className="contact-form" onSubmit={sendMail}>
+            {sendState === 'sent' ? (
+              <div className="contact-form form-sent" role="status">
+                <div className="form-sent-icon">✓</div>
+                <h3>Message sent</h3>
+                <p>
+                  Thanks{form.name ? `, ${form.name.split(' ')[0]}` : ''}! We&apos;ll reply to {form.email}.
+                  For anything urgent, write to <a href={`mailto:${EMAIL}`}>{EMAIL}</a>.
+                </p>
+              </div>
+            ) : (
+            <form className="contact-form" name="contact" method="POST" data-netlify="true"
+              netlify-honeypot="bot-field" onSubmit={sendForm}>
               <h3>Send us a message</h3>
+              <p hidden><label>Leave this empty: <input name="bot-field" tabIndex={-1} autoComplete="off" {...field('bot-field')} /></label></p>
               <div className="form-row">
                 <div className="form-group">
                   <label htmlFor="f-name">Your Name</label>
-                  <input id="f-name" type="text" placeholder="Enter your name" required {...field('name')} />
+                  <input id="f-name" name="name" type="text" autoComplete="name" placeholder="Enter your name" required {...field('name')} />
                 </div>
                 <div className="form-group">
                   <label htmlFor="f-phone">Phone</label>
-                  <input id="f-phone" type="tel" placeholder="Mobile number" {...field('phone')} />
+                  <input id="f-phone" name="phone" type="tel" autoComplete="tel" placeholder="Mobile number" {...field('phone')} />
                 </div>
               </div>
               <div className="form-group">
+                <label htmlFor="f-email">Email</label>
+                <input id="f-email" name="email" type="email" autoComplete="email" placeholder="So we can reply" required {...field('email')} />
+              </div>
+              <div className="form-group">
                 <label htmlFor="f-soc">Society / Apartment</label>
-                <input id="f-soc" type="text" placeholder="Society name and number of flats" {...field('society')} />
+                <input id="f-soc" name="society" type="text" placeholder="Society name and number of flats" {...field('society')} />
               </div>
               <div className="form-group">
                 <label htmlFor="f-msg">Message</label>
-                <textarea id="f-msg" placeholder="Tell us what you need..." {...field('message')}></textarea>
+                <textarea id="f-msg" name="message" placeholder="Tell us what you need..." required {...field('message')}></textarea>
               </div>
-              <button className="btn-primary" type="submit">
-                Send Message
+              <button className="btn-primary" type="submit" disabled={sendState === 'sending'}>
+                {sendState === 'sending' ? 'Sending…' : 'Send Message'}
                 <svg width="20" height="20" viewBox="0 0 20 20" fill="none"><path d="M4 10h12m0 0l-4-4m4 4l-4 4" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" /></svg>
               </button>
-              <p className="form-note">This opens your email app with the message addressed to {EMAIL}.</p>
+              {sendState === 'error' ? (
+                <p className="form-note form-error" role="alert">
+                  Sorry, that didn&apos;t go through. Please try again, or write to <a href={`mailto:${EMAIL}`}>{EMAIL}</a>.
+                </p>
+              ) : (
+                <p className="form-note">Your message comes straight to our inbox. Prefer email? <a href={`mailto:${EMAIL}`}>{EMAIL}</a></p>
+              )}
             </form>
+            )}
           </div>
         </div>
       </section>
