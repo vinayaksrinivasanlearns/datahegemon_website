@@ -44,16 +44,15 @@ Netlify keeps every deploy; roll back from the project's **Deploys** tab.
 
 ## Videos
 
-`.narration/` rebuilds the narrated videos from the app's 4K slide videos:
+`.narration/` builds the narrated videos from the guides in `public/guides/`, so after changing a
+guide, rebuild the videos too (needs Python with `playwright` and `edge-tts`, and ffmpeg):
 
-- `script.py` — one narration line per slide (`full` and `short`), and `RENDERED`: slides
-  re-rendered from `public/guides/` because the app changed (or `"skip"` to drop one)
-- `build.py SRC_DIR OUT_DIR` — voice (en-US-ChristopherNeural via edge-tts), 1080p H.264, frame
-  holds where a line is longer than its slide; then copy `OUT_DIR/*.mp4` to `public/videos/`
-- `cuts.py` — finds slide start times in a source video
+1. `npm run dev`, then `python render.py`: stills of every slide, message by message (1920×1080)
+2. `python build.py ../public/videos`: voice (en-US-ChristopherNeural via edge-tts), stills timed
+   to the narration, cross-fades, 1080p H.264
 
-Re-render a changed guide slide as stills with the guides' render mode:
-`/guides/admin-steps.html?render&slide=N&upto=K` (add `&typing=1` for the typing dots).
+`script.py` has one narration line per guide slide (`full` and `short`); keep it in the same
+order as the guide's slides.
 
 ## Archive
 
