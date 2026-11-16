@@ -1205,7 +1205,9 @@ ul {
   font-size: 26px; background: #E8F5E9; margin-bottom: 18px;
 }
 
-.features-grid { grid-template-columns: repeat(4, 1fr); }
+/* rows of 4 (2 on tablets, 1 on phones); a short last row is centred */
+.features-grid { display: flex; flex-wrap: wrap; justify-content: center; }
+.features-grid .service-card { flex: 0 1 calc((100% - 72px) / 4); }
 .feature-icon { margin-bottom: 18px; }
 
 .tabs {
@@ -1426,8 +1428,8 @@ ul {
 }
 
 @media (max-width: 1024px) {
-  .features-grid {
-    grid-template-columns: repeat(2, 1fr);
+  .features-grid .service-card {
+    flex-basis: calc((100% - 24px) / 2);
   }
 
   .hero h1 {
@@ -1537,7 +1539,10 @@ ul {
     grid-template-columns: 1fr;
   }
 
-  .features-grid,
+  .features-grid .service-card {
+    flex-basis: 100%;
+  }
+
   .trust-grid {
     grid-template-columns: 1fr;
   }

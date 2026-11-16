@@ -171,8 +171,12 @@
 const SOC = "Green Valley Apartments", CODE = "GREENVALLEY", NAME = "Ravi Kumar", FLAT = "A-102";
 const BOT = "Apartment Management System";
 const DUES = `🏠 *${SOC}*\n\n*${FLAT} · Oct-2026*\nThis month: ₹3,100\nPaid so far: ₹0\n💰 *Balance due: ₹3,100*`;
-const MENU = ["💸 I've paid", "🧾 Receipts", "🆘 Support"];
+const MENU = ["💸 I've paid", "🧾 Receipts", "📋 More"];
+const MORE_SHEET = { title: "Choose", rows: [
+  ["📄 Request NOC", "No dues certificate when you sell or leave"],
+  ["🆘 Support", "Something not working in the app?"]] };
 const HOME = `👋 Hi *Ravi*!\n\n🏢 *${SOC}*\n🏠 Flat ${FLAT} · Oct-2026\n💰 Balance due: *₹3,100*\n\nTap a button below. Problem with the app? Send *SUPPORT*.`;
+const HOME_PAID = `👋 Hi *Ravi*!\n\n🏢 *${SOC}*\n🏠 Flat ${FLAT} · Oct-2026\n✅ All paid. Thank you!\n\nTap a button below. Problem with the app? Send *SUPPORT*.`;
 const PROOF = "💸 Send your payment proof here, any way you like:\n📸 a screenshot of the payment\n📄 the receipt as a PDF or Word file\n✍️ or just type the reference / UTR / transaction ID";
 
 const P = new URLSearchParams(location.search), RENDER = P.has("render");
@@ -198,7 +202,7 @@ const SLIDES = window.SLIDES = [
       { bot: `✅ Approved! You're registered for this flat at *${SOC}*:\n• *${FLAT}* · Tenant\n\n${DUES}\n\nSend MENU any time to see your balance and options.`, t: "10:20" }] },
   { step: "Step 2", h: "See your balance",
     bullets: ["Send <b>hi</b> (or MENU) any time.", "You see each flat, the month and the balance due.",
-              "Three buttons: 💸 I've paid · 🧾 Receipts · 🆘 Support."],
+              "Three buttons: 💸 I've paid · 🧾 Receipts · 📋 More (NOC and Support)."],
     chat: [{ chip: "Today" }, { me: "hi", t: "09:15" }, { bot: HOME, t: "09:15", buttons: MENU }] },
   { step: "Step 3", h: "Pay the way your association asks",
     bullets: ["UPI, bank transfer, etc. The bot doesn't take payments.",
@@ -234,14 +238,33 @@ const SLIDES = window.SLIDES = [
       ["GV/2026/10/0001", `${FLAT} · Oct-2026 · ₹3,100`], ["GV/2026/09/0004", `${FLAT} · Sep-2026 · ₹3,100`],
       ["GV/2026/08/0002", `${FLAT} · Aug-2026 · ₹3,100`], ["➕ More", "Receipts of the last 12 months"]] } },
   { step: "Step 7", h: "Need help? Tap Support",
-    bullets: ["Tap 🆘 Support, or send SUPPORT.", "Type the problem, or send a screenshot.",
+    bullets: ["Tap 📋 More → 🆘 Support, or send SUPPORT.", "Type the problem, or send a screenshot.",
               "It goes straight to the support team, and you get a ticket number.",
               "Tip: add text as the screenshot's caption, so it's one report."],
     chat: [{ chip: "Today" }, { bot: HOME, t: "12:29", buttons: MENU, pre: true },
-      { tap: "🆘 Support" }, { me: "🆘 Support", t: "12:30" },
+      { tap: "📋 More" }, { me: "📋 More", t: "12:30" },
+      { bot: "What would you like to do?", t: "12:30", list: "Choose" },
+      { tap: "☰ Choose" }, { sheet: "open" }, { tap: "🆘 Support" }, { sheet: "close" },
+      { me: "🆘 Support", t: "12:30" },
       { bot: "🆘 *Support*\n\nTell us what's not working: type it, or send a screenshot or file. It goes straight to the support team.", t: "12:30", buttons: ["Cancel"] },
       { me: "September receipt not received", t: "12:31" },
-      { bot: "✅ Sent to the support team. Your ticket number is *S-0001*. We'll get back to you here on WhatsApp.", t: "12:31" }] },
+      { bot: "✅ Sent to the support team. Your ticket number is *S-0001*. We'll get back to you here on WhatsApp.", t: "12:31" }],
+    sheet: MORE_SHEET },
+  { step: "Step 8", h: "Selling or moving out? Request an NOC",
+    bullets: ["Tap 📋 More → 📄 Request NOC, or send NOC.",
+              "Only a flat that owes nothing can ask. Owners: selling the flat or vacating; tenants: vacating.",
+              "The admins issue it, and the numbered NOC PDF comes to you on WhatsApp.",
+              "Print it. Cut off the slip at the bottom and give it to security when you leave."],
+    chat: [{ chip: "Today" }, { bot: HOME_PAID, t: "10:10", buttons: MENU, pre: true },
+      { tap: "📋 More" }, { me: "📋 More", t: "10:11" },
+      { bot: "What would you like to do?", t: "10:11", list: "Choose" },
+      { tap: "☰ Choose" }, { sheet: "open" }, { tap: "📄 Request NOC" }, { sheet: "close" },
+      { me: "📄 Request NOC", t: "10:11" },
+      { bot: `📄 *NOC for flat ${FLAT}*\n✅ Nothing is due on this flat.\n\nThe admins check and issue it; the NOC comes to you here as a PDF. Its bottom part is a slip you give to security when you leave the premises.\n\nWhat is it for? Your tap sends the request.`, t: "10:11", buttons: ["🏷️ Selling the flat", "🚚 Vacating"] },
+      { tap: "🚚 Vacating" }, { me: "🚚 Vacating", t: "10:12" },
+      { bot: `✅ Your NOC request for flat ${FLAT} (🏠 Owner · vacating the premises) has been sent to the society admins. You'll get the NOC here once they issue it.`, t: "10:12" },
+      { bot: `📄 *No Objection Certificate* · ${SOC}\nFlat ${FLAT} · NOC No. GV/NOC/2026-27/0001\n\n✅ Your NOC is approved. Please print it and keep it safe for the future. Cut off the slip at the bottom and give it to security when you leave the premises.`, t: "16:40", doc: "NOC-GV-NOC-2026-27-0001.pdf" }],
+    sheet: MORE_SHEET },
   { step: "Quick extra", h: "If your payment doesn't match",
     bullets: ["The association couldn't find your payment in the bank statement.",
               "Reply with the correct UTR / reference number (or a clearer screenshot), or contact the association."],
@@ -319,7 +342,7 @@ function slide(s) {
     <p>Check your balance · tell us you've paid · get receipts · ask for help</p></section>`;
   if (s.end) return `<section class="slide title-slide"><div class="logo">✅</div>
     <h1>That's it!</h1><p>Send <b>hi</b> to the society's WhatsApp number any time.</p>
-    <p>Problem with the app? Tap 🆘 Support.</p></section>`;
+    <p>Problem with the app? Tap 📋 More → 🆘 Support, or send SUPPORT.</p></section>`;
   return `<section class="slide"><div class="copy"><div class="step">${s.step}</div><h1>${s.h}</h1>
     <ul>${s.bullets.map(b => `<li>${b}</li>`).join("")}</ul></div>${phone(s)}</section>`;
 }

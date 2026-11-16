@@ -33,14 +33,18 @@ const ICONS = {
   upload: icon(<><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4" /><polyline points="17 8 12 3 7 8" /><line x1="12" y1="3" x2="12" y2="15" /></>),
   check: icon(<><path d="M22 11.08V12a10 10 0 11-5.93-9.14" /><polyline points="22 4 12 14.01 9 11.01" /></>),
   send: icon(<><path d="M22 2L11 13" /><path d="M22 2l-7 20-4-9-9-4 20-7z" /></>),
+  fix: icon(<><path d="M14.7 6.3a4 4 0 00-5.4 5.4L3 18l3 3 6.3-6.3a4 4 0 005.4-5.4l-2.6 2.6-2.4-.6-.6-2.4z" /></>),
+  noc: icon(<><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z" /><path d="M14 2v6h6" /><path d="M9 15l2 2 4-4" /></>),
 }
 
 const FEATURES = [
   { i: ICONS.bank, t: 'Bank statement matching', d: 'Upload the statement as PDF, Excel or CSV. Payments are matched to flats using UPI notes, UTR numbers and residents’ payment proofs. Rows that need a look are marked in yellow.' },
   { i: ICONS.proof, t: 'Payment proof on WhatsApp', d: 'Residents tap “I’ve paid” and send a screenshot, a PDF receipt or just the UTR. Every admin sees it next to what the bank statement shows.' },
   { i: ICONS.receipt, t: 'Numbered PDF receipts', d: 'Once you confirm the finalized Excel, receipts are numbered and sent to each payer on WhatsApp. Old receipts can be downloaded any time.' },
+  { i: ICONS.fix, t: 'Fix a receipt', d: 'A payment on the wrong flat, in the wrong month, with the wrong amount, or not a dues payment at all. The receipt is cancelled with the reason, a corrected one is made, and the resident is told.' },
   { i: ICONS.bell, t: 'Reminders & unpaid notices', d: 'A short reminder for flats that still owe, or a payment reminder PDF for dues a month or more overdue. Download all notices to print.' },
   { i: ICONS.join, t: 'QR join with admin approval', d: 'Residents scan the society QR and send JOIN. A new number just sends its name and flat, and the admin approves it as owner or tenant.' },
+  { i: ICONS.noc, t: 'NOC on WhatsApp', d: 'Selling or moving out? A resident with no dues requests a No Objection Certificate; the admin issues a numbered NOC PDF, with a slip for security, straight to their WhatsApp.' },
   { i: ICONS.fee, t: 'Late fees, your society’s rules', d: 'Grace months, a fixed fee, a monthly fee, a percentage or slabs, with an optional cap. Changes apply from a chosen month, never backwards.' },
   { i: ICONS.chart, t: 'Dashboard & reports', d: 'Collected, pending and every flat’s status in one picture. Maintenance dues, unpaid list and no-dues receipts as Excel or PDF.' },
   { i: ICONS.support, t: 'Built-in support', d: 'Residents and admins send SUPPORT with a message or a screenshot and get a ticket number back on WhatsApp.' },
@@ -63,7 +67,7 @@ const FLOW = [
     { who: 'admin', t: 'Admin approves new numbers', d: 'Every admin gets the request with the name, flat and the last digits of the mobile. Approve as owner or tenant, or reject.' },
   ] },
   { phase: 'Every month: collecting', items: [
-    { who: 'resident', t: 'Resident checks the balance', d: 'Sends hi and sees each flat, the month and the balance due, with I’ve paid, Receipts and Support buttons.' },
+    { who: 'resident', t: 'Resident checks the balance', d: 'Sends hi and sees each flat, the month and the balance due, with I’ve paid, Receipts and More (NOC, Support) buttons.' },
     { who: 'resident', t: 'Resident pays and sends proof', d: 'Pays the society directly by UPI or bank transfer, then sends a screenshot, PDF or the UTR, with an optional note.' },
     { who: 'admin', t: 'Treasurer uploads the bank statement', d: 'PDF, Excel or CSV from net banking. Several files are fine; a payment in two files is counted once.' },
     { who: 'system', t: 'Payments are matched', d: 'Credits are matched to flats using UPI notes, UTR numbers in the proofs and payers seen before. The result is Maintenance_dues.xlsx, with rows to check in yellow.' },
@@ -74,6 +78,12 @@ const FLOW = [
     { who: 'admin', t: 'Send receipts', d: 'One tap sends every payer their receipt PDF on WhatsApp, with a summary of who got it.' },
     { who: 'admin', t: 'Remind unpaid flats', d: 'A short reminder, or a payment reminder PDF for dues a month or more overdue. Late fees are added by the society’s rule.' },
     { who: 'resident', t: 'Residents get receipts and reminders', d: 'Receipts arrive on their own. Old ones are under Receipts. If a proof did not match, the resident is asked to send it again.' },
+  ] },
+  { phase: 'Any time', items: [
+    { who: 'admin', t: 'Fix a receipt', d: 'Recorded on the wrong flat, month or amount? Menu → Fix a receipt shows each flat’s balance before → after. On Confirm the receipt is cancelled (kept, with the reason) and a corrected one is made; later months follow.' },
+    { who: 'system', t: 'The resident is told', d: 'If the cancelled receipt had reached them, the resident hears it was cancelled and why, and gets the corrected receipt at once.' },
+    { who: 'resident', t: 'Resident requests an NOC', d: 'Selling the flat or moving out: More → Request NOC. Only a flat with no dues can ask; owners for resale or vacating, tenants for vacating.' },
+    { who: 'admin', t: 'Admin issues the NOC', d: 'Every admin gets the request with the flat and its dues. Issue NOC makes a numbered PDF: the resident gets it on WhatsApp, with a slip to give security on the day they leave.' },
   ] },
 ]
 
@@ -122,7 +132,7 @@ const HeroPhone = () => (
             👋 Hi <b>Ravi</b>!<br /><br />🏢 <b>Green Valley Apartments</b><br />🏠 Flat A-102 · Oct-2026<br />💰 Balance due: <b>₹3,100</b>
             <span className="hp-meta">09:15</span>
           </div>
-          <div className="hp-btns"><div>💸 I&apos;ve paid</div><div>🧾 Receipts</div><div>🆘 Support</div></div>
+          <div className="hp-btns"><div>💸 I&apos;ve paid</div><div>🧾 Receipts</div><div>📋 More</div></div>
         </div>
         <div className="hp-row bot">
           <div className="hp-bubble">
@@ -277,7 +287,8 @@ function App() {
                 <li>Send <b>hi</b> any time to see your balance for the month</li>
                 <li>Tap I&apos;ve paid and send a screenshot, PDF or the UTR number</li>
                 <li>Get your receipt PDF on WhatsApp, and download old ones</li>
-                <li>Tap Support if anything goes wrong</li>
+                <li>Selling or moving out? Tap More → Request NOC; the NOC PDF comes on WhatsApp</li>
+                <li>More → Support if anything goes wrong</li>
               </ul>
             </div>
             <div className="comm-card">
@@ -288,6 +299,8 @@ function App() {
                 <li>Upload the bank statement; payments are matched for you</li>
                 <li>Import the checked Excel and send all receipts in one tap</li>
                 <li>Remind unpaid flats, or send overdue notices as PDF</li>
+                <li>Fix a receipt recorded on the wrong flat, month or amount</li>
+                <li>Issue NOCs to residents who sell or move out</li>
                 <li>Add or remove residents and flats in the setup Excel, and approve new numbers</li>
               </ul>
             </div>
@@ -440,7 +453,7 @@ function App() {
               { t: 'Official WhatsApp Business API', d: 'Messages go through Meta’s official Cloud API, from one verified business number.' },
               { t: 'Each resident sees only their flat', d: 'Never another flat, owner or tenant. Admins see only their own society.' },
               { t: 'Only the committee lets people in', d: 'A number not on the society’s list can join only after an admin approves it as owner or tenant.' },
-              { t: 'Records you can rely on', d: 'A receipt number is never reused or changed. A screenshot alone never marks a flat as paid.' },
+              { t: 'Records you can rely on', d: 'A receipt is never edited or its number reused: a wrong one is cancelled, kept with its reason, and replaced. A screenshot alone never marks a flat as paid.' },
             ].map((f) => (
               <div className="about-feature" key={f.t}>
                 <div className="about-feature-icon">{ICONS.shield}</div>
