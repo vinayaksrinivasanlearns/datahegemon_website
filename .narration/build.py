@@ -1,7 +1,8 @@
-"""Build narrated 1080p guide videos.
+"""Build the narrated 1080p guide videos from the rendered guide stills.
 
-python build.py SRC_DIR OUT_DIR [name ...]
-Reads the 4K slide videos from SRC_DIR (never writes there) and writes <name>.mp4 to OUT_DIR.
+python render.py                 # first: stills from public/guides (dev server running)
+python build.py OUT_DIR [name ...]
+Writes <name>.mp4 to OUT_DIR (normally ../public/videos).
 """
 import asyncio
 import hashlib
@@ -13,10 +14,12 @@ from pathlib import Path
 
 import edge_tts
 
-from script import RENDERED, VIDEOS
+from script import VIDEOS
 
 VOICE, RATE, PITCH = "en-US-ChristopherNeural", "-3%", "-6Hz"
-LEAD, TAIL = 0.8, 0.5          # silence before / after each line inside its slide
+LEAD, TAIL = 0.8, 0.6   # silence before / after each line inside its slide
+XF = 0.4                # cross-fade between slides
+MIN_UNIT = {"short": 0.6, "full": 0.75}   # seconds per unit of still weight, at least
 WORK = Path(__file__).parent / "work"
 
 
@@ -35,96 +38,85 @@ async def speak(text, path):
         await edge_tts.Communicate(text, VOICE, rate=RATE, pitch=PITCH).save(str(path))
 
 
-def build(name, src_dir, out_dir):
-    src_name, lines, which, starts = VIDEOS[name]
-    src = Path(src_dir) / src_name
+def build(name, out_dir):
+    guide, lines, which = VIDEOS[name]
+    frames_dir = WORK / "frames" / guide
+    plan = json.loads((frames_dir / "plan.json").read_text())
+    assert len(plan) == len(lines), (name, len(plan), len(lines))
     work = WORK / name
     work.mkdir(parents=True, exist_ok=True)
-    total_src = duration(src)
-    assert len(lines) == len(starts), (name, len(lines), len(starts))
 
     # 1. voice clips (cached by text)
-    clips = []
-    for text in (l[which] for l in lines):
-        h = hashlib.sha1(f"{VOICE}{RATE}{PITCH}{text}".encode()).hexdigest()[:12]
-        clips.append(WORK / "tts" / f"{h}.mp3")
     (WORK / "tts").mkdir(exist_ok=True)
+    clips = [WORK / "tts" / (hashlib.sha1(f"{VOICE}{RATE}{PITCH}{l[which]}".encode()).hexdigest()[:12] + ".mp3")
+             for l in lines]
 
     async def all_tts():
-        for (l, c) in zip(lines, clips):
-            if l[which]:
-                await speak(l[which], c)
+        for l, c in zip(lines, clips):
+            await speak(l[which], c)
     asyncio.run(all_tts())
 
-    # 2. video segments at 1080p, holding the last frame when the line is longer than the slide
-    seg_files, offsets, used, t = [], [], [], 0.0
-    plan = []
-    for i, (s, clip) in enumerate(zip(starts, clips)):
-        if RENDERED.get((name.split("-")[0], i)) == "skip":  # slide no longer in the product
-            continue
-        e = starts[i + 1] if i + 1 < len(starts) else total_src
-        slot, d = e - s, duration(clip)
-        hold = max(0.0, LEAD + d + TAIL - slot)
-        seg = work / f"seg{i:02d}.mp4"
-        vf = "scale=1920:1080:flags=lanczos,fps=30,format=yuv420p"
-        if hold > 0:
-            vf += f",tpad=stop_mode=clone:stop_duration={hold:.3f}"
-        enc = ["-an", "-c:v", "libx264", "-preset", "medium", "-crf", "21", "-profile:v", "high", "-r", "30"]
-        weights = RENDERED.get((name.split("-")[0], i))
-        if weights:  # re-rendered slide: stills shown in turn over the same slot
-            frames = sorted((WORK / "render" / f"{name.split('-')[0]}-{i}").glob("*.png"))
-            assert len(frames) == len(weights), (name, i, len(frames))
-            unit = slot / sum(weights)
-            lines_txt = "".join(f"file '{f.as_posix()}'\nduration {w * unit:.3f}\n" for f, w in zip(frames, weights))
-            lines_txt += f"file '{frames[-1].as_posix()}'\n"  # concat demuxer needs the last file twice
-            cl = work / f"render{i:02d}.txt"
-            cl.write_text(lines_txt)
-            run(["ffmpeg", "-y", "-loglevel", "error", "-f", "concat", "-safe", "0", "-i", str(cl),
-                 "-vf", vf, "-t", f"{slot + hold:.3f}", *enc, str(seg)])
-        else:
-            run(["ffmpeg", "-y", "-loglevel", "error", "-ss", f"{s:.3f}", "-t", f"{slot:.3f}", "-i", str(src),
-                 "-vf", vf, *enc, str(seg)])
-        seg_files.append(seg)
-        offsets.append(t)
-        used.append(clip)
-        real = duration(seg)
-        plan.append(dict(slide=i, src_start=s, slot=round(slot, 2), voice=round(d, 2), hold=round(hold, 2),
-                         new_start=round(t, 2)))
-        t += real
-    total = t
+    # 2. each slide: its stills, spread over max(voice time, a readable minimum)
+    inputs, chains, lens, report = [], [], [], []
+    for i, (weights, clip) in enumerate(zip(plan, clips)):
+        voice = duration(clip)
+        length = max(LEAD + voice + TAIL, sum(weights) * MIN_UNIT[which])
+        if i < len(plan) - 1:
+            length += XF                       # the fade eats into the end of the slide
+        unit = (length - (XF if i else 0)) / sum(weights)
+        stills = sorted((frames_dir / f"{i:02d}").glob("*.png"))
+        assert len(stills) == len(weights), (name, i)
+        txt = ""
+        for k, (f, w) in enumerate(zip(stills, weights)):
+            d = w * unit + (XF if i and k == 0 else 0)   # first still also covers the fade-in
+            txt += f"file '{f.as_posix()}'\nduration {d:.3f}\n"
+        txt += f"file '{stills[-1].as_posix()}'\n"
+        lst = work / f"slide{i:02d}.txt"
+        lst.write_text(txt)
+        inputs += ["-f", "concat", "-safe", "0", "-i", str(lst)]
+        chains.append(f"[{i}:v]scale=1920:1080:flags=lanczos,fps=30,format=yuv420p,"
+                      f"tpad=stop_mode=clone:stop_duration=2,trim=duration={length:.3f},setpts=PTS-STARTPTS,"
+                      f"settb=1/30[s{i}]")
+        lens.append(length)
+        report.append(dict(slide=i, stills=len(weights), voice=round(voice, 2), length=round(length, 2)))
 
-    lst = work / "list.txt"
-    lst.write_text("".join(f"file '{p.as_posix()}'\n" for p in seg_files))
-    video = work / "video.mp4"
-    run(["ffmpeg", "-y", "-loglevel", "error", "-f", "concat", "-safe", "0", "-i", str(lst), "-c", "copy",
-         str(video)])
+    # slide i becomes visible at starts[i]; the fade into it ends XF later
+    starts, t = [], 0.0
+    for i, L in enumerate(lens):
+        starts.append(t)
+        t += L - XF
+    total = t + XF
+    prev = "s0"
+    for i in range(1, len(lens)):
+        out = f"x{i}" if i < len(lens) - 1 else "vout"
+        chains.append(f"[{prev}][s{i}]xfade=transition=fade:duration={XF}:offset={starts[i]:.3f}[{out}]")
+        prev = out
 
-    # 3. voice track: each clip placed at its slide's new start + LEAD
-    inputs, chains = [], []
-    clips = used
-    for i, (clip, off) in enumerate(zip(clips, offsets)):
+    # 3. voice: each line at its slide's start + LEAD
+    n = len(lens)
+    for i, (clip, s) in enumerate(zip(clips, starts)):
         inputs += ["-i", str(clip)]
-        ms = int((off + LEAD) * 1000)
-        chains.append(f"[{i}:a]aresample=48000,adelay={ms}|{ms}[a{i}]")
-    mix = "".join(f"[a{i}]" for i in range(len(clips)))
-    fc = ";".join(chains) + f";{mix}amix=inputs={len(clips)}:normalize=0:dropout_transition=0," \
-         f"apad,atrim=0:{total:.3f},loudnorm=I=-16:TP=-1.5:LRA=11[out]"
-    voice = work / "voice.m4a"
-    run(["ffmpeg", "-y", "-loglevel", "error", *inputs, "-filter_complex", fc, "-map", "[out]",
-         "-ac", "2", "-ar", "48000", "-c:a", "aac", "-b:a", "160k", str(voice)])
+        ms = int((s + LEAD) * 1000)
+        chains.append(f"[{n + i}:a]aresample=48000,adelay={ms}|{ms}[a{i}]")
+    chains.append("".join(f"[a{i}]" for i in range(n)) +
+                  f"amix=inputs={n}:normalize=0:dropout_transition=0,apad,atrim=0:{total:.3f},"
+                  f"loudnorm=I=-16:TP=-1.5:LRA=11[aout]")
 
-    # 4. mux
+    graph = work / "graph.txt"
+    graph.write_text(";\n".join(chains))
     out = Path(out_dir) / f"{name}.mp4"
-    run(["ffmpeg", "-y", "-loglevel", "error", "-i", str(video), "-i", str(voice), "-map", "0:v", "-map", "1:a",
-         "-c", "copy", "-movflags", "+faststart", "-t", f"{total:.3f}", str(out)])
-    (work / "plan.json").write_text(json.dumps(plan, indent=1))
-    return f"{name}: {total_src:.1f}s -> {total:.1f}s, {out.stat().st_size / 1e6:.1f} MB"
+    run(["ffmpeg", "-y", "-loglevel", "error", *inputs, "-filter_complex_script", str(graph),
+         "-map", "[vout]", "-map", "[aout]",
+         "-c:v", "libx264", "-preset", "medium", "-crf", "21", "-profile:v", "high", "-pix_fmt", "yuv420p", "-r", "30",
+         "-c:a", "aac", "-b:a", "160k", "-ac", "2", "-ar", "48000",
+         "-movflags", "+faststart", "-t", f"{total:.3f}", str(out)])
+    (work / "plan.json").write_text(json.dumps(report, indent=1))
+    return f"{name}: {total:.1f}s, {out.stat().st_size / 1e6:.1f} MB"
 
 
 if __name__ == "__main__":
-    src_dir, out_dir, *names = sys.argv[1:]
-    names = names or list(VIDEOS)
+    out_dir, *names = sys.argv[1:]
     Path(out_dir).mkdir(parents=True, exist_ok=True)
     with ThreadPoolExecutor(2) as pool:
-        for r in pool.map(lambda n: build(n, src_dir, out_dir), names):
+        for r in pool.map(lambda n: build(n, out_dir), names or list(VIDEOS)):
             print(r, flush=True)

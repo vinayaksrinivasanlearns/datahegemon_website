@@ -101,13 +101,13 @@ const VIDEOS = {
     label: 'For residents',
     short: { src: '/videos/resident-guide-short.mp4', label: 'Quick tour' },
     full: { src: '/videos/resident-guide-full.mp4', label: 'Full guide' },
-    blurb: 'Join with the society QR, check your balance, send payment proof, get receipts and ask for help.',
+    blurb: 'Join with the society QR, check your balance, send payment proof, get receipts, request an NOC and ask for help.',
   },
   admin: {
     label: 'For committee admins',
     short: { src: '/videos/admin-guide-short.mp4', label: 'Quick tour' },
     full: { src: '/videos/admin-guide-full.mp4', label: 'Full guide' },
-    blurb: 'The monthly cycle: upload the bank statement, check dues, import the finalized Excel, send receipts and remind unpaid flats.',
+    blurb: 'The monthly cycle: upload the bank statement, check dues, import the finalized Excel, send receipts and remind unpaid flats. Plus fixing a receipt and issuing NOCs.',
   },
 }
 
