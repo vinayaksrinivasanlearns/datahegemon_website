@@ -13,7 +13,9 @@ project. This repository is only the public website; it links to the app's login
 - Features, the monthly cycle and the full flow (resident · committee · system)
 - Narrated 1080p video guides for residents and admins (`public/videos/`)
 - Interactive step-by-step WhatsApp guides (`public/guides/*.html`, self-contained)
-- Contact form (opens the visitor's email app, addressed to info@datahegemon.co.in)
+- Contact form on **Netlify Forms** (form `contact`): submissions appear under Forms → contact in
+  Netlify and are emailed to info@datahegemon.co.in. The hidden `<form name="contact">` in
+  `index.html` must list the same fields as the form in `src/App.jsx`, or Netlify drops them.
 
 Everything described must match the **current** app code. Features removed from the app
 (e.g. the join selfie, the 2-minute chat close, Update/Remove a resident) must not appear here.
